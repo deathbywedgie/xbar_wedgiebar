@@ -350,21 +350,22 @@ class Reusable:
 # ToDo REVISIT
 
 # ToDo Finish building the Icons class and switch everything over to using it
-# ToDo Finish putting lh_batch_success.png to use for the "runtimeStats" section
 
 class Icons:
     # Class for centralizing all logos used by the plugin
 
-    file_menu_logichub = "LH_menu_logichub.ico"
-    file_menu_ssh = "LH_menu_ssh.png"
+    file_menu_ssh = "menu_ssh.png"
 
-    file_status_small = "LH_menu_status_small.png"
-    file_status_large = "LH_menu_status_large.png"
-    file_status_large_dark = "LH_menu_status_large_dark.png"
-    file_status_xlarge = "LH_menu_status_xlarge.png"
-    file_status_xlarge_dark = "LH_menu_status_xlarge_dark.png"
-
-    file_lh_batch_success = "lh_batch_success.png"
+    # ToDo Replace this with a new image!
+    file_status_small = "status_small.png"
+    # ToDo Replace this with a new image!
+    file_status_large = "status_large.png"
+    # ToDo Replace this with a new image!
+    file_status_large_dark = "status_large_dark.png"
+    # ToDo Replace this with a new image!
+    file_status_xlarge = "status_xlarge.png"
+    # ToDo Replace this with a new image!
+    file_status_xlarge_dark = "status_xlarge_dark.png"
 
     def __init__(self, repo_path):
         self.image_path = os.path.join(repo_path, "supporting_files/images")
@@ -484,14 +485,14 @@ class Config:
 
         logos_by_os_theme = {
             "Dark": {
-                "small": "LH_menu_status_small.png",
-                "large": "LH_menu_status_large_dark.png",
-                "xl": "LH_menu_status_xlarge_dark.png",
+                "small": Icons.file_status_small,
+                "large": Icons.file_status_large_dark,
+                "xl": Icons.file_status_xlarge_dark,
             },
             "Light": {
-                "small": "LH_menu_status_small.png",
-                "large": "LH_menu_status_large.png",
-                "xl": "LH_menu_status_xlarge.png",
+                "small": Icons.file_status_small,
+                "large": Icons.file_status_large,
+                "xl": Icons.file_status_xlarge,
             }
         }
         self.status_bar_logo = logos_by_os_theme[self.main.os_theme][self.main.status_bar_icon_size]
@@ -664,7 +665,7 @@ class Actions:
         self.check_for_custom_networking_configs()
 
         self.add_menu_section(
-            "Networking | image={} size=20 color=blue".format(self.image_to_base64_string("LH_menu_ssh.png")))
+            "Networking | image={} size=20 color=blue".format(self.image_to_base64_string(Icons.file_menu_ssh)))
 
         self.print_in_menu("Reset")
         self.make_action("Terminate SSH tunnels", self.action_terminate_tunnels, terminal=True)
