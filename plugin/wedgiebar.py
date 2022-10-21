@@ -347,10 +347,21 @@ class Reusable:
         return sorted(var_list, key=build_key())
 
 
-# ToDo REVISIT
+# ToDo Finish this too and use it everywhere that images are read or displayed
+class Icon:
+    def __init__(self, location, name):
+        self.location = location
+        self.name = name
+        self.path = os.path.join(self.location, self.name)
+
+    def to_base64_string(self):
+        with open(self.path, "rb") as image_file:
+            image_bytes = image_file.read()
+            image_b64 = base64.b64encode(image_bytes)
+        return image_b64.decode("unicode_escape")
+
 
 # ToDo Finish building the Icons class and switch everything over to using it
-
 class Icons:
     # Class for centralizing all logos used by the plugin
 
@@ -369,13 +380,6 @@ class Icons:
 
     def __init__(self, repo_path):
         self.image_path = os.path.join(repo_path, "supporting_files/images")
-
-    def __image_to_base64_string(self, file_name):
-        file_path = os.path.join(self.image_path, file_name)
-        with open(file_path, "rb") as image_file:
-            image_bytes = image_file.read()
-            image_b64 = base64.b64encode(image_bytes)
-        return image_b64.decode("unicode_escape")
 
 
 @dataclass_json
@@ -480,7 +484,6 @@ class Config:
             self.default_ssh_key = os.path.join(self.dir_user_home, ".ssh", self.default_ssh_key)
 
         self.dir_internal_tools = self.main.repo_path
-        self.dir_supporting_scripts = os.path.join(self.dir_internal_tools, "scripts")
         self.image_file_path = os.path.join(self.dir_internal_tools, 'supporting_files/images')
 
         logos_by_os_theme = {
