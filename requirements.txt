@@ -1,0 +1,6 @@
+clipboard >= 0.0.4
+configparser >= 5.0.0
+sqlparse >= 0.3.0
+configobj >= 5.0.6
+dataclasses-json >= 0.5.1
+psutil >= 5.7.2
