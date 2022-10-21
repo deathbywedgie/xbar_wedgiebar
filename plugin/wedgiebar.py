@@ -14,7 +14,6 @@ import configobj
 import json
 import os
 import re
-import sqlparse
 import subprocess
 import shlex
 import sys
@@ -32,7 +31,6 @@ import distutils.spawn
 import shutil
 from pathlib import Path
 from datetime import datetime
-import csv
 import argparse
 from typing import Dict
 
