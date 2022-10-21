@@ -326,10 +326,9 @@ class Reusable:
 
     @staticmethod
     def flatten_list(var_list):
-        if not isinstance(var_list, (list, tuple)):
-            return var_list
-        else:
-            return [r for v in var_list for r in v]
+        if isinstance(var_list, (list, tuple)):
+            return [r for v in var_list for r in Reusable.flatten_list(v)]
+        return var_list
 
     @staticmethod
     def sort_list_treating_numbers_by_value(var_list: list):
