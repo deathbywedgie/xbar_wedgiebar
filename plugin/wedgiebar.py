@@ -34,36 +34,42 @@ from datetime import datetime
 import argparse
 from typing import Dict
 
-# ToDo Add a custom path param for ini file
-chrome_driver_default_paths = [
-    '/usr/bin/chromedriver',
-    '/usr/local/bin/chromedriver',
-]
+# ToDo Drop the ini file! Switch to environment variables and an update to .zshrc
 
-chromedriver = None
-chrome_driver_error = None
+class Plugin:
+    chromedriver = None
+
+    # ToDo Add a param to ini file for a custom path for the driver
+    chrome_driver_default_paths = [
+        '/usr/bin/chromedriver',
+        '/usr/local/bin/chromedriver',
+    ]
+
+    class errors:
+        chrome_driver_error = None
+        json2table_import_error = None
+
 
 try:
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
 except:
-    chrome_driver_error = "selenium import failed"
+    Plugin.errors.chrome_driver_error = "selenium import failed"
 else:
-    chromedriver = distutils.spawn.find_executable("chromedriver")
-    if not chromedriver:
-        for _path in chrome_driver_default_paths:
+    Plugin.chromedriver = distutils.spawn.find_executable("chromedriver")
+    if not Plugin.chromedriver:
+        for _path in Plugin.chrome_driver_default_paths:
             if os.path.exists(_path):
-                chromedriver = _path
+                Plugin.chromedriver = _path
                 break
 
-if not chromedriver:
-    chrome_driver_error = "Chrome driver not found"
+if not Plugin.chromedriver:
+    Plugin.errors.chrome_driver_error = "Chrome driver not found"
 
-json2table_error = False
 try:
     import json2html
 except ModuleNotFoundError:
-    json2table_error = True
+    Plugin.errors.json2table_import_error = True
 
 # Global static variables
 user_config_file = "xbar_wedgiebar.ini"
@@ -114,30 +120,15 @@ class Browser:
 
         if not self.driver:
             self.driver = self.make_driver()
-            # Disabled for troubleshooting but found it still works. Maybe just needed when capturing actual URLs?
+            # Disabled for troubleshooting but found it still works. Maybe just needed when capturing actual URLs? [shrug]
             # self.enable_download_in_headless_chrome()
 
     def make_driver(self):
-        # ToDo Why is this redefined here when it's also done at the root level?
-        chromedriver = distutils.spawn.find_executable("chromedriver")
-        if not chromedriver:
-            for _path in chrome_driver_default_paths:
-                if os.path.exists(_path):
-                    chromedriver = _path
-                    break
-
-        if not chromedriver:
-            # Try Python 3 style, then fall back onto Python2 compatible
-            try:
-                raise FileNotFoundError("Chrome driver not found")
-            except:
-                raise IOError("Chrome driver not found")
-
         chrome_options = Options()
         chrome_options.add_argument("--headless")
         chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--window-size={}".format(self.window_size))
-        return webdriver.Chrome(executable_path=chromedriver, options=chrome_options)
+        chrome_options.add_argument(f"--window-size={self.window_size}")
+        return webdriver.Chrome(executable_path=Plugin.chromedriver, options=chrome_options)
 
     def enable_download_in_headless_chrome(self):
         # add missing support for chrome "send_command" to selenium webdriver
@@ -158,7 +149,7 @@ class Browser:
             try:
                 shutil.move(temp_target, save_path)
             except Exception as e:
-                print("Failed to move file to requested location: {}\n\nException:\n{}\n\n".format(save_path, str(e)))
+                print(f"Failed to move file to requested location: {save_path}\n\nException:\n{str(e)}\n\n")
                 save_path = temp_target
 
         return save_path
@@ -293,7 +284,7 @@ class Reusable:
         assert file_ext
         if prefix and not prefix.endswith("_"):
             prefix = prefix + "_"
-        _temp_file_name = "{}{}".format(prefix or "", datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S-%f')[:-3])
+        _temp_file_name = f"{prefix or ''}{datetime.utcnow().strftime('%Y-%m-%d_%H-%M-%S-%f')[:-3]}"
         if file_ext:
             _temp_file_name += "." + file_ext
         if name_only:
@@ -364,15 +355,11 @@ class Icons:
 
     file_menu_ssh = "menu_ssh.png"
 
-    # ToDo Replace this with a new image!
     file_status_small = "status_small.png"
-    # ToDo Replace this with a new image!
+    file_status_small_dark = "status_small_dark.png"
     file_status_large = "status_large.png"
-    # ToDo Replace this with a new image!
     file_status_large_dark = "status_large_dark.png"
-    # ToDo Replace this with a new image!
     file_status_xlarge = "status_xlarge.png"
-    # ToDo Replace this with a new image!
     file_status_xlarge_dark = "status_xlarge_dark.png"
 
     def __init__(self, repo_path):
@@ -386,43 +373,50 @@ class ConfigMain:
     repo_path: str
 
     # Local user ID. If not provided, user will be drawn from USER environment variable
-    local_user: str
+    local_user: str = os.environ.get("USER")
 
     # Default SSH username. If not provided, user will be drawn from USER environment variable
-    ssh_user: str
+    ssh_user: str = os.environ.get("USER")
 
     # SSH keys are assumed to be located in ~/.ssh unless a full path is provided
-    ssh_key: str
+    ssh_key: str = "id_rsa"
 
     # Return either "Dark" or "Light" for the OS theme
-    os_theme: str
+    os_theme: str = os.popen('defaults read -g AppleInterfaceStyle 2> /dev/null').read().strip() or "Light"
 
     # Usually "lo0"
-    default_loopback_interface: str
+    default_loopback_interface: str = "lo0"
 
     # Define how this plugin should appear in the status bar
     # Options: logo, text, both, custom
-    status_bar_style: str
+    status_bar_style: str = "logo"
 
     # Text for the notification label (not used if status_bar_style is set to logo)
     # Default is "<PROJECT_NAME>"
     # If status_bar_style is set to "custom", you can specify additional formatting criteria according to xbar's plugin API
-    status_bar_label: str
+    status_bar_label: str = "wedgiebar"
 
     # Choose the logo: small, large, xl
-    status_bar_icon_size: str
+    status_bar_icon_size: str = "small"
 
     # Override the color of the text in the status bar (ignored if text is disabled by the selected style)
-    status_bar_text_color: str
+    status_bar_text_color: str = "black"
 
     # Generate a popup notification every time the clipboard gets updated
-    clipboard_update_notifications: bool
+    clipboard_update_notifications: bool = True
 
     # Show debug output
-    debug_output_enabled: bool
+    debug_output_enabled: bool = False
 
     # default Jira prefix (project name)
-    jira_default_prefix: str
+    jira_default_prefix: str = None
+
+    # Jira web server hostname, e.g. subdomain.domain.com
+    jira_server_hostname: str = None
+
+    def __post_init__(self):
+        self.clipboard_update_notifications = Reusable.convert_boolean(self.clipboard_update_notifications)
+        self.debug_output_enabled = Reusable.convert_boolean(self.debug_output_enabled)
 
 
 @dataclass_json
@@ -459,7 +453,7 @@ class Config:
                 if k not in self.user_settings_dict:
                     self.user_settings_dict[k] = {}
 
-        self.get_config_main(**self.user_settings_dict.get("main", {}))
+        self.get_config_main()
         if self.main.debug_output_enabled:
             global debug_enabled
             debug_enabled = self.main.debug_output_enabled
@@ -485,7 +479,7 @@ class Config:
 
         logos_by_os_theme = {
             "Dark": {
-                "small": Icons.file_status_small,
+                "small": Icons.file_status_small_dark,
                 "large": Icons.file_status_large_dark,
                 "xl": Icons.file_status_xlarge_dark,
             },
@@ -497,24 +491,11 @@ class Config:
         }
         self.status_bar_logo = logos_by_os_theme[self.main.os_theme][self.main.status_bar_icon_size]
 
-    def get_config_main(self, **kwargs):
-        self.main = ConfigMain(
-            repo_path=kwargs.get("repo_path", None),
-            local_user=kwargs.get("local_user", os.environ.get("USER")),
-            ssh_user=kwargs.get("ssh_user", os.environ.get("USER")),
-            ssh_key=kwargs.get("ssh_key", "id_rsa"),
-            os_theme=kwargs.get("os_theme", os.popen(
-                'defaults read -g AppleInterfaceStyle 2> /dev/null').read().strip() or "Light"),
-            default_loopback_interface=kwargs.get("default_loopback_interface", "lo0"),
-            status_bar_style=kwargs.get("status_bar_style", "logo"),
-            status_bar_label=kwargs.get("status_bar_label", "wedgie"),
-            status_bar_icon_size=kwargs.get("status_bar_icon_size", "large"),
-            status_bar_text_color=kwargs.get("status_bar_text_color", "black"),
-            clipboard_update_notifications=Reusable.convert_boolean(
-                kwargs.get("clipboard_update_notifications", False)),
-            debug_output_enabled=Reusable.convert_boolean(kwargs.get("debug_output_enabled", False)),
-            jira_default_prefix=kwargs.get("jira_default_prefix", "<PROJECT_NAME>")
-        )
+    def get_config_main(self):
+        self.main = ConfigMain(**{
+            k: v for k, v in self.user_settings_dict.get("main", {}).items()
+            if v not in ['', None]
+        })
 
     def get_config_menu_networking_params(self, **kwargs):
         self.menu_networking = ConfigMenuNetworking(kwargs)
@@ -547,12 +528,12 @@ class Actions:
         self.status = ""
         self.menu_output = ""
 
+        self.config = config
+
         # ToDo FIX THIS: Hostname should be passed through the ini file
-        self.url_jira = r"https://projet.atlassian.net/browse/{}"
+        self.url_jira = rf"https://{self.config.main.jira_server_hostname}/browse/{{}}"
         self.url_uws = r"https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID={}"
         self.url_nmap = r"https://nmap.org/nsedoc/scripts/{}"
-
-        self.config = config
 
         self.set_status_bar_display()
         self.loopback_interface = self.config.default_loopback_interface
@@ -562,18 +543,20 @@ class Actions:
 
         # ToDo Move all of these to main so it's easier to find going forward!
 
-        # ------------ Menu Section: TECH ------------ #
+        # ------------ Menu Section: DATA & TEXT ------------ #
 
-        self.add_menu_section(":wrench: TECH | size=20 color=blue")
+        self.add_menu_section(":floppy_disk: Clipboard Editing | size=20 color=blue")
 
-        self.print_in_menu("Data & Text Editing")
+        self.print_in_menu("Text Editing")
 
-        self.add_menu_section("Text", text_color="blue", menu_depth=1)
+        self.add_menu_section("Sorting", text_color="blue", menu_depth=1)
 
         self.make_action("Sort Lines (no duplicates)", self.text_sort_lines_no_duplicates, keyboard_shortcut="CmdOrCtrl+shift+s")
         self.make_action("Sort Lines (allow duplicates)", self.text_sort_lines_allow_duplicates, keyboard_shortcut="CmdOrCtrl+OptionOrAlt+s")
         self.make_action("Sort Words and Phrases (no duplicates)", self.text_sort_words_and_phrases_no_duplicates)
         self.make_action("Sort Words and Phrases (allow duplicates)", self.text_sort_words_and_phrases_allow_duplicates)
+
+        self.add_menu_section("Editing", text_color="blue", menu_depth=1)
 
         self.make_action("Text to Uppercase", self.text_make_uppercase, keyboard_shortcut="CmdOrCtrl+OptionOrAlt+u")
         self.make_action("Text to Lowercase", self.text_make_lowercase, keyboard_shortcut="CmdOrCtrl+OptionOrAlt+l")
@@ -584,10 +567,15 @@ class Actions:
         self.make_action("Strip non-ascii characters", self.remove_non_ascii_characters)
         self.make_action("White space to underscores", self.white_space_to_underscores, keyboard_shortcut="CmdOrCtrl+shift+u")
 
+        self.print_in_menu("Time Conversion")
         self.add_menu_section("Time", text_color="blue", menu_depth=1)
 
         self.make_action("Show epoch time as local time (leave clipboard)", self.action_epoch_time_to_str, action_id="epoch_time_as_local_time", keyboard_shortcut="CmdOrCtrl+shift+e")
         self.make_action("Convert epoch time as local time (update clipboard)", self.epoch_time_as_local_time_convert, alternate=True)
+
+        # ------------ Menu Section: TECH ------------ #
+
+        self.add_menu_section(":wrench: TECH | size=20 color=blue")
 
         self.print_in_menu("JSON")
         self.make_action("Validate", self.action_json_validate)
@@ -609,7 +597,7 @@ class Actions:
         self.make_action("Fix (escaped strings to dicts/lists)", self.action_json_fix)
         self.make_action("Sort by keys and values (recursive)", self.action_json_sort)
 
-        if not json2table_error:
+        if not Plugin.errors.json2table_import_error:
             self.make_action("JSON to HTML Table (clipboard)", self.action_json_to_html)
             self.make_action("JSON to HTML Table (open in browser)", self.action_json_to_html_as_file)
         else:
@@ -618,16 +606,23 @@ class Actions:
         self.print_in_menu("HTML")
         self.make_action("Open as a file", self.action_html_to_temp_file, keyboard_shortcut="CmdOrCtrl+shift+h")
 
-        if not chrome_driver_error:
+        if not Plugin.errors.chrome_driver_error:
             self.make_action("Generate screenshot", self.action_html_to_screenshot)
             self.make_action("Generate screenshot (low res)", self.action_html_to_screenshot_low_res, alternate=True)
         else:
-            self.make_action("Screenshot unavailable ({})".format(chrome_driver_error), None)
+            self.make_action(f"Screenshot unavailable ({Plugin.errors.chrome_driver_error})", None)
 
         self.print_in_menu("Link Makers")
 
-        self.make_action("Jira: Open Link from ID", self.make_link_jira_and_open, keyboard_shortcut="CmdOrCtrl+shift+j")
-        self.make_action("Jira: Make Link from ID", self.make_link_jira, alternate=True)
+        if not self.config.main.jira_server_hostname and not self.config.main.jira_default_prefix:
+            self.make_action("Jira hostname and default project prefix not set", None)
+        elif not self.config.main.jira_server_hostname:
+            self.make_action("Jira hostname not set", None)
+        elif not self.config.main.jira_default_prefix:
+            self.make_action("Jira default project prefix not set", None)
+        else:
+            self.make_action("Jira: Open Link from ID", self.make_link_jira_and_open, keyboard_shortcut="CmdOrCtrl+shift+j")
+            self.make_action("Jira: Make Link from ID", self.make_link_jira, alternate=True)
         self.make_action("UWS: Open link from Windows event ID", self.make_link_uws_and_open)
         self.make_action("UWS: Make link from Windows event ID", self.make_link_uws, alternate=True)
         self.make_action("Nmap: Open link to script documentation", self.make_link_nmap_script_and_open)
@@ -665,8 +660,7 @@ class Actions:
         # First check whether there are any custom networking configs (i.e. ssh tunnels or port redirects)
         self.check_for_custom_networking_configs()
 
-        self.add_menu_section(
-            "Networking | image={} size=20 color=blue".format(self.image_to_base64_string(Icons.file_menu_ssh)))
+        self.add_menu_section(f"Networking | image={self.image_to_base64_string(Icons.file_menu_ssh)} size=20 color=blue")
 
         self.print_in_menu("Reset")
         self.make_action("Terminate SSH tunnels", self.action_terminate_tunnels, terminal=True)
@@ -765,8 +759,11 @@ class Actions:
             error_msg = f"Failed with an exception ({type(exception).__name__}): check traceback in clipboard"
         self.display_notification_error(error_msg, error_prefix="", print_stderr=print_stderr)
 
+    def _get_full_image_path(self, file_name):
+        return os.path.join(self.config.image_file_path, file_name)
+
     def image_to_base64_string(self, file_name):
-        file_path = os.path.join(self.config.image_file_path, file_name)
+        file_path = self._get_full_image_path(file_name)
         with open(file_path, "rb") as image_file:
             image_bytes = image_file.read()
             image_b64 = base64.b64encode(image_bytes)
