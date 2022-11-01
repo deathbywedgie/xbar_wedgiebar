@@ -34,6 +34,7 @@ from datetime import datetime
 import argparse
 from typing import Dict
 
+
 # ToDo Drop the ini file! Switch to environment variables and an update to .zshrc
 
 class Plugin:
@@ -73,6 +74,9 @@ except ModuleNotFoundError:
 
 # Global static variables
 user_config_file = "xbar_wedgiebar.ini"
+
+# Return either "Dark" or "Light" for the OS theme
+OS_THEME: str = os.popen('defaults read -g AppleInterfaceStyle 2> /dev/null').read().strip() or "Light"
 
 # Will be updated if enabled via the config file
 debug_enabled = False
@@ -337,10 +341,10 @@ class Reusable:
 
 # ToDo Finish this too and use it everywhere that images are read or displayed
 class Icon:
-    def __init__(self, location, name):
-        self.location = location
-        self.name = name
-        self.path = os.path.join(self.location, self.name)
+    def __init__(self, image_path):
+        self.path = os.path.realpath(image_path)
+        self.location = os.path.dirname(self.path)
+        self.name = os.path.basename(self.path)
 
     def to_base64_string(self):
         with open(self.path, "rb") as image_file:
@@ -349,21 +353,59 @@ class Icon:
         return image_b64.decode("unicode_escape")
 
 
-# ToDo Finish building the Icons class and switch everything over to using it
+@dataclass
 class Icons:
     # Class for centralizing all logos used by the plugin
 
-    file_menu_ssh = "menu_ssh.png"
+    image_dir: str
+    menu_icon_networking: str = "menu_ssh.png"
+    file_status_small: str = "status_small.png"
+    file_status_small_dark: str = "status_small_dark.png"
+    file_status_large: str = "status_large.png"
+    file_status_large_dark: str = "status_large_dark.png"
+    file_status_xlarge: str = "status_xlarge.png"
+    file_status_xlarge_dark: str = "status_xlarge_dark.png"
 
-    file_status_small = "status_small.png"
-    file_status_small_dark = "status_small_dark.png"
-    file_status_large = "status_large.png"
-    file_status_large_dark = "status_large_dark.png"
-    file_status_xlarge = "status_xlarge.png"
-    file_status_xlarge_dark = "status_xlarge_dark.png"
+    __supported_image_extensions = ["ico", "png", "jpg"]
 
-    def __init__(self, repo_path):
-        self.image_path = os.path.join(repo_path, "supporting_files/images")
+    def __post_init__(self):
+        if not self.file_status_small:
+            raise IOError("At least a small status icon must be defined")
+        self.files = {}
+        for f in os.listdir(self.image_dir):
+
+            if re.match(rf'^.*\.({"|".join(self.__supported_image_extensions)})$', f.lower()):
+                self.files[f] = Icon(os.path.join(self.image_dir, f))
+
+        # If no "large" is provided, clone small
+        self.file_status_large = self.file_status_large or self.file_status_small
+
+        # If no "xlarge" is provided, clone large
+        self.file_status_xlarge = self.file_status_xlarge or self.file_status_large
+
+        # In case the "dark" images are passed as empty/None, clone the Light theme values
+        self.file_status_small_dark = self.file_status_small_dark or self.file_status_small
+        self.file_status_large_dark = self.file_status_large_dark or self.file_status_large
+        self.file_status_xlarge_dark = self.file_status_xlarge_dark or self.file_status_xlarge
+
+        self.logos_by_os_theme = {
+            "Dark": {
+                "small": Icon(os.path.join(self.image_dir, self.file_status_small_dark)),
+                "large": Icon(os.path.join(self.image_dir, self.file_status_large_dark)),
+                "xl":    Icon(os.path.join(self.image_dir, self.file_status_xlarge_dark)),
+            },
+            "Light": {
+                "small": Icon(os.path.join(self.image_dir, self.file_status_small)),
+                "large": Icon(os.path.join(self.image_dir, self.file_status_large)),
+                "xl":    Icon(os.path.join(self.image_dir, self.file_status_xlarge)),
+            }
+        }
+
+    def get_icon(self, image_name):
+        return self.files[image_name]
+
+    def get_logo_for_theme(self, icon_size):
+        return self.logos_by_os_theme.get(OS_THEME, "Light")[icon_size]
 
 
 @dataclass_json
@@ -380,9 +422,6 @@ class ConfigMain:
 
     # SSH keys are assumed to be located in ~/.ssh unless a full path is provided
     ssh_key: str = "id_rsa"
-
-    # Return either "Dark" or "Light" for the OS theme
-    os_theme: str = os.popen('defaults read -g AppleInterfaceStyle 2> /dev/null').read().strip() or "Light"
 
     # Usually "lo0"
     default_loopback_interface: str = "lo0"
@@ -474,22 +513,11 @@ class Config:
         if "/" not in self.default_ssh_key:
             self.default_ssh_key = os.path.join(self.dir_user_home, ".ssh", self.default_ssh_key)
 
-        self.dir_internal_tools = self.main.repo_path
-        self.image_file_path = os.path.join(self.dir_internal_tools, 'supporting_files/images')
+        self.image_file_path = os.path.join(self.main.repo_path, "supporting_files/images")
+        self.icons = Icons(image_dir=self.image_file_path)
 
-        logos_by_os_theme = {
-            "Dark": {
-                "small": Icons.file_status_small_dark,
-                "large": Icons.file_status_large_dark,
-                "xl": Icons.file_status_xlarge_dark,
-            },
-            "Light": {
-                "small": Icons.file_status_small,
-                "large": Icons.file_status_large,
-                "xl": Icons.file_status_xlarge,
-            }
-        }
-        self.status_bar_logo = logos_by_os_theme[self.main.os_theme][self.main.status_bar_icon_size]
+        self.status_bar_logo = self.icons.get_logo_for_theme(icon_size=self.main.status_bar_icon_size)
+        self.menu_icon_networking = self.icons.get_icon(image_name=Icons.menu_icon_networking)
 
     def get_config_main(self):
         self.main = ConfigMain(**{
@@ -517,7 +545,7 @@ class Actions:
     port_redirect_configs = []
     __reserved_keyboard_shortcuts = {}
 
-    def __init__(self, config):
+    def __init__(self, config: Config):
         me = psutil.Process()
         parent = psutil.Process(me.ppid())
         self.parent = parent.name()
@@ -660,7 +688,7 @@ class Actions:
         # First check whether there are any custom networking configs (i.e. ssh tunnels or port redirects)
         self.check_for_custom_networking_configs()
 
-        self.add_menu_section(f"Networking | image={self.image_to_base64_string(Icons.file_menu_ssh)} size=20 color=blue")
+        self.add_menu_section(f"Networking | image={self.config.menu_icon_networking.to_base64_string()} size=20 color=blue")
 
         self.print_in_menu("Reset")
         self.make_action("Terminate SSH tunnels", self.action_terminate_tunnels, terminal=True)
@@ -776,8 +804,7 @@ class Actions:
         if self.config.main.status_bar_style != "custom":
             status_bar_label += "|"
             if self.config.main.status_bar_style in ["logo", "both"]:
-                logo = self.image_to_base64_string(self.config.status_bar_logo)
-                status_bar_label += f" image={logo}"
+                status_bar_label += f" image={self.config.status_bar_logo.to_base64_string()}"
             if self.config.main.status_bar_style in ["text", "both"]:
                 status_bar_label += f" color={self.config.main.status_bar_text_color}"
         self.status = status_bar_label
