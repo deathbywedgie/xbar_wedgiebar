@@ -9,30 +9,30 @@
 # <xbar.dependencies>See readme.md</xbar.dependencies>
 # <xbar.abouturl>https://github.com/deathbywedgie/xbar_wedgiebar</xbar.abouturl>
 
+import argparse
 import base64
-import configobj
+import collections.abc
+import distutils.spawn
 import json
 import os
 import re
-import subprocess
 import shlex
+import shutil
+import subprocess
 import sys
-from dataclasses import dataclass
-from dataclasses_json import dataclass_json
+import tempfile
 import traceback
-from numbers import Number
 import urllib.parse
+from dataclasses import dataclass
+from datetime import datetime
+from numbers import Number
+from pathlib import Path
+from typing import Dict
 
 import clipboard
-import collections.abc
+import configobj
 import psutil
-import tempfile
-import distutils.spawn
-import shutil
-from pathlib import Path
-from datetime import datetime
-import argparse
-from typing import Dict
+from dataclasses_json import dataclass_json
 
 
 # ToDo Drop the ini file! Switch to environment variables and an update to .zshrc
@@ -329,10 +329,12 @@ class Reusable:
         borrowed and modified from here:
         https://stackoverflow.com/questions/67918688/sorting-a-list-of-strings-based-on-numeric-order-of-numeric-part
         """
+
         def build_key():
             def key(x):
                 return [(j, int(i)) if i != '' else (j, i)
                         for i, j in rx.findall(x)]
+
             rx = re.compile(r'(\d+)|(.)')
             return key
 
@@ -579,8 +581,10 @@ class Actions:
 
         self.add_menu_section("Sorting", text_color="blue", menu_depth=1)
 
-        self.make_action("Sort Lines (no duplicates)", self.text_sort_lines_no_duplicates, keyboard_shortcut="CmdOrCtrl+shift+s")
-        self.make_action("Sort Lines (allow duplicates)", self.text_sort_lines_allow_duplicates, keyboard_shortcut="CmdOrCtrl+OptionOrAlt+s")
+        self.make_action("Sort Lines (no duplicates)", self.text_sort_lines_no_duplicates,
+                         keyboard_shortcut="CmdOrCtrl+shift+s")
+        self.make_action("Sort Lines (allow duplicates)", self.text_sort_lines_allow_duplicates,
+                         keyboard_shortcut="CmdOrCtrl+OptionOrAlt+s")
         self.make_action("Sort Words and Phrases (no duplicates)", self.text_sort_words_and_phrases_no_duplicates)
         self.make_action("Sort Words and Phrases (allow duplicates)", self.text_sort_words_and_phrases_allow_duplicates)
 
@@ -590,16 +594,21 @@ class Actions:
         self.make_action("Text to Lowercase", self.text_make_lowercase, keyboard_shortcut="CmdOrCtrl+OptionOrAlt+l")
         self.make_action("Trim Text in Clipboard", self.text_trim_string)
         self.make_action("Remove Text Formatting", self.text_remove_formatting)
-        self.make_action("URL Encoding: Encode (from clipboard)", self.encode_url_encoding, action_id="encode_url_encoding")
-        self.make_action("URL Encoding: Decode (from clipboard)", self.decode_url_encoding, action_id="decode_url_encoding")
+        self.make_action("URL Encoding: Encode (from clipboard)", self.encode_url_encoding,
+                         action_id="encode_url_encoding")
+        self.make_action("URL Encoding: Decode (from clipboard)", self.decode_url_encoding,
+                         action_id="decode_url_encoding")
         self.make_action("Strip non-ascii characters", self.remove_non_ascii_characters)
-        self.make_action("White space to underscores", self.white_space_to_underscores, keyboard_shortcut="CmdOrCtrl+shift+u")
+        self.make_action("White space to underscores", self.white_space_to_underscores,
+                         keyboard_shortcut="CmdOrCtrl+shift+u")
 
         self.print_in_menu("Time Conversion")
         self.add_menu_section("Time", text_color="blue", menu_depth=1)
 
-        self.make_action("Show epoch time as local time (leave clipboard)", self.action_epoch_time_to_str, action_id="epoch_time_as_local_time", keyboard_shortcut="CmdOrCtrl+shift+e")
-        self.make_action("Convert epoch time as local time (update clipboard)", self.epoch_time_as_local_time_convert, alternate=True)
+        self.make_action("Show epoch time as local time (leave clipboard)", self.action_epoch_time_to_str,
+                         action_id="epoch_time_as_local_time", keyboard_shortcut="CmdOrCtrl+shift+e")
+        self.make_action("Convert epoch time as local time (update clipboard)", self.epoch_time_as_local_time_convert,
+                         alternate=True)
 
         # ------------ Menu Section: TECH ------------ #
 
@@ -649,7 +658,8 @@ class Actions:
         elif not self.config.main.jira_default_prefix:
             self.make_action("Jira default project prefix not set", None)
         else:
-            self.make_action("Jira: Open Link from ID", self.make_link_jira_and_open, keyboard_shortcut="CmdOrCtrl+shift+j")
+            self.make_action("Jira: Open Link from ID", self.make_link_jira_and_open,
+                             keyboard_shortcut="CmdOrCtrl+shift+j")
             self.make_action("Jira: Make Link from ID", self.make_link_jira, alternate=True)
         self.make_action("UWS: Open link from Windows event ID", self.make_link_uws_and_open)
         self.make_action("UWS: Make link from Windows event ID", self.make_link_uws, alternate=True)
