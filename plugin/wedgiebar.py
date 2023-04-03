@@ -575,10 +575,9 @@ class Actions:
 
         # ------------ Menu Section: DATA & TEXT ------------ #
 
-        self.add_menu_section(":floppy_disk: Clipboard Editing | size=20 color=blue")
+        self.add_menu_section(":pencil: Clipboard Editing | size=20 color=blue")
 
         self.print_in_menu("Text Editing")
-
         self.add_menu_section("Sorting", text_color="blue", menu_depth=1)
 
         self.make_action("Sort Lines (no duplicates)", self.text_sort_lines_no_duplicates,
