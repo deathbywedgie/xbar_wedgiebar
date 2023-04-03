@@ -1110,7 +1110,7 @@ class Actions:
         assert local_port, "Error: Loopback port not provided"
         assert int(local_port), "Error: Loopback port for SSH tunnel is not a number"
 
-        # If the SSH server address is a loopback IP (like when tunneling over another tunnel, such as Bomgar tunnel jumps)
+        # If the SSH server address is a loopback IP (like when tunneling over another tunnel)
         # Make sure the server port is not left at 22. Otherwise a tunnel to your own machine will be created and won't work.
         assert ssh_server_port != 22 or not re.match(r'^127\..*', ssh_server_address), \
             "Error: SSH server is a loopback IP, and the port is left at 22. This will create a tunnel to your own machine and won't work!"
