@@ -16,6 +16,7 @@ import distutils.spawn
 import json
 import os
 import re
+import sqlparse
 import shlex
 import shutil
 import subprocess
@@ -599,6 +600,20 @@ class Actions:
         self.make_action("White space to underscores", self.white_space_to_underscores,
                          keyboard_shortcut="CmdOrCtrl+shift+u")
 
+        self.add_menu_section("Spaced Strings", text_color="blue", menu_depth=1)
+
+        self.make_action("Tabs to commas", self.spaced_string_to_commas)
+        self.make_action("Tabs to commas (force lowercase)", self.spaced_string_to_commas_lowercase, alternate=True)
+
+        self.make_action("Tabs to commas (sorted)", self.spaced_string_to_commas_sorted)
+        self.make_action("Tabs to commas (sorted, force lowercase)", self.spaced_string_to_commas_sorted_lowercase, alternate=True)
+
+        self.make_action("Tabs to commas & quotes", self.spaced_string_to_commas_and_quotes)
+        self.make_action("Tabs to commas & quotes (force lowercase)", self.spaced_string_to_commas_and_quotes_lowercase, alternate=True)
+
+        self.make_action("Tabs to commas & quotes (sorted)", self.spaced_string_to_commas_and_quotes_sorted)
+        self.make_action("Tabs to commas & quotes (sorted, force lowercase)", self.spaced_string_to_commas_and_quotes_sorted_lowercase, alternate=True)
+
         self.print_in_menu("Time Conversion")
         self.add_menu_section("Time", text_color="blue", menu_depth=1)
 
@@ -643,6 +658,22 @@ class Actions:
             self.make_action("Generate screenshot (low res)", self.action_html_to_screenshot_low_res, alternate=True)
         else:
             self.make_action(f"Screenshot unavailable ({Plugin.errors.chrome_driver_error})", None)
+
+        self.print_in_menu("SQL")
+        self.make_action("Pretty Print SQL", self.sql_pretty_print)
+        self.make_action("Pretty Print SQL options", action=None, alternate=True)
+        self.make_action("Wrapped at 80 characters", self.sql_pretty_print_sql, menu_depth=2)
+        self.make_action("Compact", self.sql_pretty_print_compact, menu_depth=2)
+
+        self.make_action("SQL Start from spaced strings", self.sql_start_from_tabs)
+        self.make_action("SQL Start from spaced strings (sorted)", self.sql_start_from_tabs_sorted)
+        self.make_action("SQL Start from spaced strings (distinct)", self.sql_start_from_tabs_distinct)
+
+        self.make_action("SQL Start from spaced strings (join with left columns)", self.sql_start_from_tabs_join_left)
+        self.make_action("SQL Start from spaced strings (join, left columns only)", self.sql_start_from_tabs_join_left_columns_only, alternate=True)
+
+        self.make_action("SQL Start from spaced strings (join with right columns)", self.sql_start_from_tabs_join_right)
+        self.make_action("SQL Start from spaced strings (join, right columns only)", self.sql_start_from_tabs_join_right_columns_only, alternate=True)
 
         self.print_in_menu("Link Makers")
 
@@ -726,6 +757,10 @@ class Actions:
         #     except:
         #         pass
 
+    ############################################################################
+    # Reusable functions
+    ############################################################################
+
     def add_menu_section(self, label, menu_depth=0, text_color=None):
         """
         Print a divider line as needed by the plugin menu, then print a label for the new section
@@ -750,12 +785,6 @@ class Actions:
         _divider_line = "---" + "--" * menu_depth
         self.print_in_menu(_divider_line)
 
-    def print_menu_output(self):
-        print(self.menu_output.strip())
-
-    ############################################################################
-    # Reusable functions
-    ############################################################################
     def display_notification(self, content, title=None):
         content = content.replace('"', '\\"')
         if not title:
@@ -898,6 +927,26 @@ class Actions:
         else:
             _input_str = self.read_clipboard()
         return Reusable.write_text_to_temp_file(_input_str, file_ext, file_ext + "_text")
+
+    def _split_spaced_string(self, force_lower=False, sort=False, quote=False, update_clipboard=True):
+        _input_str = self.read_clipboard()
+
+        # Remove commas and quotes in case the user clicked the wrong xbar option and wants to go right back to processing it
+        # Remove pipes too so this can be used on postgresql headers as well
+        _input_str = re.sub('[,"|\']+', ' ', _input_str)
+
+        if force_lower:
+            _input_str = _input_str.lower()
+        _columns = [i.strip() for i in _input_str.split() if i.strip()]
+        if sort:
+            _columns = sorted(_columns)
+        output_pattern = '"{}"' if quote else "{}"
+        join_pattern = '", "' if quote else ", "
+        final_output = output_pattern.format(join_pattern.join(_columns))
+        if update_clipboard:
+            self.write_clipboard(final_output)
+        else:
+            return final_output
 
     ############################################################################
     # Section:
@@ -1569,6 +1618,109 @@ class Actions:
             return _command
         self.write_clipboard(_command)
 
+    def make_pretty_print_sql(self, input_str, wrap_after=0):
+        """
+        Reusable method to "pretty print" SQL
+
+        :param input_str:
+        :param wrap_after:
+        :return:
+        """
+        try:
+            # Replace line breaks with spaces, then trim leading and trailing whitespace
+            _output = re.sub(r'[\n\r]+', ' ', input_str).strip()
+
+            _output = sqlparse.format(
+                _output, reindent=True, keyword_case='upper', indent_width=4,
+                wrap_after=wrap_after, identifier_case=None)
+
+            # nit: if just selecting "*" then drop that initial newline. no reason to drop "FROM" to the next row.
+            if re.match(r"^SELECT \*\nFROM ", _output):
+                _output = re.sub(r"^SELECT \*\n", "SELECT * ", _output)
+
+            # specific keyword replacements for forcing uppercase
+            specific_functions_to_uppercase = [
+                "get_json_object", "from_unixtime", "min(", "max(", "sum(",
+                "count(", "coalesce(", "regexp_replace", "regexp_extract("
+            ]
+            for f in specific_functions_to_uppercase:
+                if f in _output:
+                    _output = _output.replace(f, f.upper())
+
+            # Workaround for "result" and other fields always getting turned into uppercase by sqlparse
+            override_caps = ["result", "temp", "version", "usage", "instance"]
+            for cap_field in override_caps:
+                if re.findall(fr"\b{cap_field.upper()}\b", _output) and not re.findall(fr"\b{cap_field.upper()}\b",
+                                                                                       input_str):
+                    _output = re.sub(fr"\b{cap_field.upper()}\b", cap_field.lower(), _output)
+
+            # Workaround to space out math operations
+            _output = re.sub(r'\b([-+*/])(\d)', " \1 \2", _output)
+        except Exception as err:
+            self.display_notification_error("Exception from sqlparse: {}".format(repr(err)))
+        else:
+            return _output
+
+    def sql_pretty_print(self, **kwargs):
+        """
+        Pretty Print SQL
+
+        :return:
+        """
+        _input_str = self.read_clipboard()
+        _output = self.make_pretty_print_sql(_input_str, **kwargs)
+        self.write_clipboard(_output)
+
+    def sql_pretty_print_sql(self):
+        """
+        Pretty Print SQL: Wrapped at 80 characters
+
+        :return:
+        """
+        self.sql_pretty_print(wrap_after=80)
+
+    def sql_pretty_print_compact(self):
+        """
+        Pretty Print SQL: Compact
+
+        :return:
+        """
+        self.sql_pretty_print(wrap_after=99999)
+
+    def sql_start_from_tabs(self):
+        _columns_formatted = self._split_spaced_string(update_clipboard=False)
+        self.write_clipboard(f'SELECT {_columns_formatted}\nFROM ')
+
+    def sql_start_from_tabs_sorted(self):
+        _columns_formatted = self._split_spaced_string(update_clipboard=False, sort=True)
+        self.write_clipboard(f'SELECT {_columns_formatted}\nFROM ')
+
+    def sql_start_from_tabs_distinct(self):
+        _columns_formatted = self._split_spaced_string(update_clipboard=False)
+        self.write_clipboard(f'SELECT DISTINCT {_columns_formatted}\nFROM ')
+
+    def sql_start_from_tabs_join_left_columns_only(self):
+        _input_str = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', _input_str)
+        self.write_clipboard("L.{}".format(", L.".join(_columns)))
+
+    def sql_start_from_tabs_join_right_columns_only(self):
+        _input_str = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', _input_str)
+        self.write_clipboard("R.{}".format(", R.".join(_columns)))
+
+    def sql_start_from_tabs_join_left(self):
+        _input_str = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', _input_str)
+        _columns_formatted = "L.{}".format(", L.".join(_columns))
+        self.write_clipboard(f'SELECT {_columns_formatted}\nFROM xxxx L\nLEFT JOIN xxxx R\nON L.xxxx = R.xxxx')
+
+    def sql_start_from_tabs_join_right(self):
+        _input_str = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', _input_str)
+        _columns_formatted = "R.{}".format(", R.".join(_columns))
+        self.write_clipboard(f'SELECT {_columns_formatted}\nFROM xxxx L\nLEFT JOIN xxxx R\nON L.xxxx = R.xxxx')
+
     ############################################################################
     # Section:
     #   Clipboard Editing
@@ -1675,6 +1827,30 @@ class Actions:
         _input_str = self.read_clipboard()
         self.write_clipboard(re.sub(r'\s+', '_', _input_str))
 
+    def spaced_string_to_commas(self):
+        self._split_spaced_string()
+
+    def spaced_string_to_commas_lowercase(self):
+        self._split_spaced_string(force_lower=True)
+
+    def spaced_string_to_commas_sorted(self):
+        self._split_spaced_string(sort=True)
+
+    def spaced_string_to_commas_sorted_lowercase(self):
+        self._split_spaced_string(force_lower=True, sort=True)
+
+    def spaced_string_to_commas_and_quotes(self):
+        self._split_spaced_string(quote=True)
+
+    def spaced_string_to_commas_and_quotes_lowercase(self):
+        self._split_spaced_string(quote=True, force_lower=True)
+
+    def spaced_string_to_commas_and_quotes_sorted(self):
+        self._split_spaced_string(quote=True, sort=True)
+
+    def spaced_string_to_commas_and_quotes_sorted_lowercase(self):
+        self._split_spaced_string(quote=True, sort=True, force_lower=True)
+
     ############################################################################
     # Clipboard Editing -> Time Conversion
 
@@ -1693,6 +1869,9 @@ class Actions:
 
     def epoch_time_as_local_time_convert(self):
         self.action_epoch_time_to_str(update_clipboard=True)
+
+    def print_menu_output(self):
+        print(self.menu_output.strip())
 
     def execute_plugin(self, action):
         log.debug(f"Executing action: {action}")
