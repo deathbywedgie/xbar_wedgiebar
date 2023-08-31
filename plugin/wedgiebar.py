@@ -573,8 +573,6 @@ class Actions:
 
         # ToDo Move all of these to main so it's easier to find going forward!
 
-        # ------------ Menu Section: DATA & TEXT ------------ #
-
         self.add_menu_section(":pencil: Clipboard Editing | size=20 color=blue")
 
         self.print_in_menu("Text Editing")
@@ -604,10 +602,8 @@ class Actions:
         self.print_in_menu("Time Conversion")
         self.add_menu_section("Time", text_color="blue", menu_depth=1)
 
-        self.make_action("Show epoch time as local time (leave clipboard)", self.action_epoch_time_to_str,
-                         action_id="epoch_time_as_local_time", keyboard_shortcut="CmdOrCtrl+shift+e")
-        self.make_action("Convert epoch time as local time (update clipboard)", self.epoch_time_as_local_time_convert,
-                         alternate=True)
+        self.make_action("Show epoch time as local time (leave clipboard)", self.action_epoch_time_to_str, action_id="epoch_time_as_local_time", keyboard_shortcut="CmdOrCtrl+shift+e")
+        self.make_action("Convert epoch time as local time (update clipboard)", self.epoch_time_as_local_time_convert, alternate=True)
 
         # ------------ Menu Section: TECH ------------ #
 
@@ -1574,7 +1570,9 @@ class Actions:
         self.write_clipboard(_command)
 
     ############################################################################
-    # TECH -> Text Editing
+    # Section:
+    #   Clipboard Editing
+    ############################################################################
 
     def _text_sort_lines(self, remove_duplicates: bool):
         """Sort Lines (reusable)"""
@@ -1586,6 +1584,9 @@ class Actions:
             all_values = list(set(all_values))
 
         self.write_clipboard('\n'.join(Reusable.sort_list_treating_numbers_by_value(all_values)))
+
+    ############################################################################
+    # Clipboard Editing -> Text Editing
 
     def text_sort_lines_no_duplicates(self):
         """Sort Lines (no duplicates)"""
@@ -1673,6 +1674,9 @@ class Actions:
         """White space to underscores"""
         _input_str = self.read_clipboard()
         self.write_clipboard(re.sub(r'\s+', '_', _input_str))
+
+    ############################################################################
+    # Clipboard Editing -> Time Conversion
 
     def action_epoch_time_to_str(self, update_clipboard=False):
         """Show epoch time as local time"""
