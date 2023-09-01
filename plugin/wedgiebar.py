@@ -561,7 +561,6 @@ class Actions:
 
         self.config = config
 
-        # ToDo FIX THIS: Hostname should be passed through the ini file
         self.url_jira = rf"https://{self.config.main.jira_server_hostname}/browse/{{}}"
         self.url_uws = r"https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID={}"
         self.url_nmap = r"https://nmap.org/nsedoc/scripts/{}"
@@ -572,10 +571,7 @@ class Actions:
         # dict to store all the actions
         self.action_list: Dict[str, ActionObject] = {}
 
-        # ToDo Move all of these to main so it's easier to find going forward!
-
         self.add_menu_section(":pencil: Clipboard Editing | size=20 color=blue")
-
         self.print_in_menu("Text Editing")
         self.add_menu_section("Sorting", text_color="blue", menu_depth=1)
 
