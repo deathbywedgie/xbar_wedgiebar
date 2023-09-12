@@ -36,8 +36,9 @@ import psutil
 from dataclasses_json import dataclass_json
 
 
-# ToDo Drop the ini file! Switch to environment variables and an update to .zshrc
 # Global static variables
+
+# Update 2023-09-12: Considered replacing the ini file with zshrc environment variables, but env vars are apparently not accessible to xbar
 user_config_file = "xbar_wedgiebar.ini"
 
 # Return either "Dark" or "Light" for the OS theme
