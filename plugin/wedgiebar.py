@@ -37,6 +37,26 @@ from dataclasses_json import dataclass_json
 
 
 # ToDo Drop the ini file! Switch to environment variables and an update to .zshrc
+# Global static variables
+user_config_file = "xbar_wedgiebar.ini"
+
+# Return either "Dark" or "Light" for the OS theme
+OS_THEME: str = os.popen('defaults read -g AppleInterfaceStyle 2> /dev/null').read().strip() or "Light"
+
+
+def get_args():
+    # Range of available args and expected input
+    parser = argparse.ArgumentParser(description="wedgiebar xbar plugin")
+
+    # Inputs expected from user
+    parser.add_argument("action", nargs='?', type=str, help="Name of an action to execute")
+
+    # Optional args:
+    parser.add_argument("-l", "--list", dest="list_actions", action="store_true", help="List available actions")
+
+    # take in the arguments provided by user
+    return parser.parse_args()
+
 
 class Plugin:
     chromedriver = None
@@ -72,26 +92,6 @@ try:
     import json2html
 except ModuleNotFoundError:
     Plugin.errors.json2table_import_error = True
-
-# Global static variables
-user_config_file = "xbar_wedgiebar.ini"
-
-# Return either "Dark" or "Light" for the OS theme
-OS_THEME: str = os.popen('defaults read -g AppleInterfaceStyle 2> /dev/null').read().strip() or "Light"
-
-
-def get_args():
-    # Range of available args and expected input
-    parser = argparse.ArgumentParser(description="wedgiebar xbar plugin")
-
-    # Inputs expected from user
-    parser.add_argument("action", nargs='?', type=str, help="Name of an action to execute")
-
-    # Optional args:
-    parser.add_argument("-l", "--list", dest="list_actions", action="store_true", help="List available actions")
-
-    # take in the arguments provided by user
-    return parser.parse_args()
 
 
 class Log:
