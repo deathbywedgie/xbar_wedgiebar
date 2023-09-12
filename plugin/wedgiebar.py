@@ -79,9 +79,6 @@ user_config_file = "xbar_wedgiebar.ini"
 # Return either "Dark" or "Light" for the OS theme
 OS_THEME: str = os.popen('defaults read -g AppleInterfaceStyle 2> /dev/null').read().strip() or "Light"
 
-# Will be updated if enabled via the config file
-debug_enabled = False
-
 
 def get_args():
     # Range of available args and expected input
@@ -101,10 +98,7 @@ class Log:
     """
     Simple class for debug logging for the time being. May eventually replace with a real Logger
     """
-
-    @property
-    def debug_enabled(self):
-        return debug_enabled
+    debug_enabled = False  # Will be updated if enabled via the config file
 
     def debug(self, msg):
         if self.debug_enabled:
@@ -497,8 +491,7 @@ class Config:
 
         self.get_config_main()
         if self.main.debug_output_enabled:
-            global debug_enabled
-            debug_enabled = self.main.debug_output_enabled
+            Log.debug_enabled = self.main.debug_output_enabled
 
         if not self.main.repo_path:
             print(f"repo_path not set in {user_config_file}")
