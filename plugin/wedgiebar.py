@@ -337,7 +337,7 @@ class Reusable:
         return sorted(var_list, key=build_key())
 
 
-# ToDo Finish this too and use it everywhere that images are read or displayed
+# Use everywhere that images are read or displayed
 class Icon:
     def __init__(self, image_path):
         self.path = os.path.realpath(image_path)
@@ -478,7 +478,7 @@ class Config:
     menu_networking: ConfigMenuNetworking = None
 
     def __post_init__(self):
-        config_sections = ["main", "menu_networking", "menu_custom"]
+        config_sections = ["main", "menu_networking"]
 
         # initialize a config obj for the user's ini config file
         self.user_settings_dict = configobj.ConfigObj(os.path.join(os.environ.get("HOME"), user_config_file))
@@ -499,6 +499,7 @@ class Config:
             sys.exit(1)
 
         self.get_config_menu_networking_params(**self.user_settings_dict.get("menu_networking", {}))
+        # ToDo Still not used; implement custom commands
         self.menu_custom = ConfigMenuCustom()
 
         # Find the path to the home directory
@@ -814,6 +815,7 @@ class Actions:
     def _get_full_image_path(self, file_name):
         return os.path.join(self.config.image_file_path, file_name)
 
+    # ToDo Can this be replaced with Icon object? (Icon.to_base64_string)
     def image_to_base64_string(self, file_name):
         file_path = self._get_full_image_path(file_name)
         with open(file_path, "rb") as image_file:
