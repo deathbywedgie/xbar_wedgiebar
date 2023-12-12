@@ -18,7 +18,9 @@ The following Python packages are required. (See requirements.txt for exact vers
 * dataclasses-json
 * psutil
 * json2html
-* selenium (only required if you want URL & HTML screenshot actions to work)
+* optional (only required if you want URL & HTML screenshot actions to work)
+  * setuptools (no longer included by default as of 3.12)
+  * selenium
 
 Note: since these packages must be installed for whatever installation of 
 Python3 resolves from /usr/local/bin/python3, you may run into errors when just 
