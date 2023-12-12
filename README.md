@@ -2,8 +2,10 @@
 BitBar/xbar plugin with handy features for frequent LogicHub users
 
 # Required Software
-* xbar (formerly BitBar): https://xbarapp.com/ / https://github.com/matryer/xbar
-* git (install via brew)
+* xbar (formerly BitBar)
+  * download: https://xbarapp.com/
+  * source: https://github.com/matryer/xbar
+* git (installable via brew)
 * Python 3.6+ (must resolve via /usr/local/bin/python3)
 
 # Required Python Packages
