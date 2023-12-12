@@ -1,2 +1,3 @@
+setuptools
 selenium >= 3.141.0
 json2html >= 1.3.0
