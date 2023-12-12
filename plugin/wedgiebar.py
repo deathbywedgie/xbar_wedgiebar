@@ -593,7 +593,7 @@ class Actions:
 
         self.add_menu_section("Spaced Strings", text_color="blue", menu_depth=1)
 
-        self.make_action("Tabs to commas", self.spaced_string_to_commas)
+        self.make_action("Tabs to commas", self.spaced_string_to_commas, keyboard_shortcut="CmdOrCtrl+shift+t")
         self.make_action("Tabs to commas (force lowercase)", self.spaced_string_to_commas_lowercase, alternate=True)
 
         self.make_action("Tabs to commas (sorted)", self.spaced_string_to_commas_sorted)
