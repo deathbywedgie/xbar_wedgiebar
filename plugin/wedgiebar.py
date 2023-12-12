@@ -12,7 +12,6 @@
 import argparse
 import base64
 import collections.abc
-import distutils.spawn
 import json
 import os
 import re
@@ -74,6 +73,8 @@ class Plugin:
 
 
 try:
+    # import distutils.spawn
+    from setuptools import distutils
     from selenium import webdriver
     from selenium.webdriver.chrome.options import Options
 except:
