@@ -716,22 +716,23 @@ class Actions:
         # First check whether there are any custom networking configs (i.e. ssh tunnels or port redirects)
         self.check_for_custom_networking_configs()
 
-        self.add_menu_section(f"Networking | image={self.config.menu_icon_networking.to_base64_string()} size=20 color=blue")
+        if self.port_redirect_configs or self.ssh_tunnel_configs:
+            self.add_menu_section(f"Networking | image={self.config.menu_icon_networking.to_base64_string()} size=20 color=blue")
 
-        self.print_in_menu("Reset")
-        self.make_action("Terminate SSH tunnels", self.action_terminate_tunnels, terminal=True)
-        self.make_action("Terminate Local Port Redirection", self.action_terminate_port_redirection, terminal=True)
-        self.make_action("Terminate All", self.action_terminate_all, terminal=True)
+            self.print_in_menu("Reset")
+            self.make_action("Terminate SSH tunnels", self.action_terminate_tunnels, terminal=True)
+            self.make_action("Terminate Local Port Redirection", self.action_terminate_port_redirection, terminal=True)
+            self.make_action("Terminate All", self.action_terminate_all, terminal=True)
 
-        self.print_in_menu("Port Redirection")
-        # If custom redirect configs are defined in the ini config, then add actions for each
-        for _config in self.port_redirect_configs:
-            self.make_action(_config[0], self.port_redirect_custom, terminal=True, action_id=_config[1])
+            self.print_in_menu("Port Redirection")
+            # If custom redirect configs are defined in the ini config, then add actions for each
+            for _config in self.port_redirect_configs:
+                self.make_action(_config[0], self.port_redirect_custom, terminal=True, action_id=_config[1])
 
-        self.print_in_menu("SSH Tunnels (custom)")
-        # If custom ssh configs are defined in the ini config, then add actions for each
-        for _config in self.ssh_tunnel_configs:
-            self.make_action(_config[0], self.ssh_tunnel_custom, terminal=True, action_id=_config[1])
+            self.print_in_menu("SSH Tunnels (custom)")
+            # If custom ssh configs are defined in the ini config, then add actions for each
+            for _config in self.ssh_tunnel_configs:
+                self.make_action(_config[0], self.ssh_tunnel_custom, terminal=True, action_id=_config[1])
 
         # Added to help with troubleshooting, but for now I'm disabling until/unless it is needed again
         # self.print_in_menu(f"---")
