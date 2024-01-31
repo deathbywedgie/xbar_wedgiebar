@@ -652,7 +652,7 @@ class Actions:
             self.make_action(f"Screenshot unavailable ({Plugin.errors.chrome_driver_error})", None)
 
         self.print_in_menu("SQL")
-        self.make_action("Pretty Print SQL", self.sql_pretty_print)
+        self.make_action("Pretty Print SQL", self.sql_pretty_print, keyboard_shortcut="CmdOrCtrl+shift+p")
         self.make_action("Pretty Print SQL options", action=None, alternate=True)
         self.make_action("Wrapped at 80 characters", self.sql_pretty_print_sql, menu_depth=2)
         self.make_action("Compact", self.sql_pretty_print_compact, menu_depth=2)
