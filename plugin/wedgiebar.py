@@ -1621,8 +1621,11 @@ class Actions:
         :return:
         """
         try:
+            # Strip leading and trailing ticks if present
+            _output = re.sub(r'^\s*`|`\s*$', '', input_str).strip()
+
             # Replace line breaks with spaces, then trim leading and trailing whitespace
-            _output = re.sub(r'[\n\r]+', ' ', input_str).strip()
+            _output = re.sub(r'[\n\r]+', ' ', _output).strip()
 
             _output = sqlparse.format(
                 _output, reindent=True, keyword_case='upper', indent_width=4,
