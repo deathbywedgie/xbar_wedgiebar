@@ -587,6 +587,8 @@ class Actions:
                          action_id="encode_url_encoding")
         self.make_action("URL Encoding: Decode (from clipboard)", self.decode_url_encoding,
                          action_id="decode_url_encoding")
+        self.make_action("Base64: Encode", self.action_encode_base_64)
+        self.make_action("Base64: Decode", self.action_decode_base_64)
         self.make_action("Strip non-ascii characters", self.remove_non_ascii_characters)
         self.make_action("White space to underscores", self.white_space_to_underscores,
                          keyboard_shortcut="CmdOrCtrl+shift+u")
@@ -1812,6 +1814,18 @@ class Actions:
             self.write_clipboard(urllib.parse.unquote(_input_str))
         except:
             self.display_notification_error("Failed to decode URL string")
+
+    def action_encode_base_64(self):
+        """Base64: Encode"""
+        _input_str = self.read_clipboard()
+        encoded_str = base64.b64encode(str.encode(_input_str, 'utf-8'))
+        self.write_clipboard(encoded_str.decode())
+
+    def action_decode_base_64(self):
+        """Base64: Decode"""
+        _input_str = self.read_clipboard()
+        encoded_str = base64.b64decode(_input_str)
+        self.write_clipboard(encoded_str.decode())
 
     def remove_non_ascii_characters(self):
         """Strip non-ascii characters"""
