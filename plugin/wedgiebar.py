@@ -15,7 +15,6 @@ import collections.abc
 import json
 import os
 import re
-import sqlparse
 import shlex
 import shutil
 import subprocess
@@ -1621,6 +1620,8 @@ class Actions:
         :return:
         """
         try:
+            import sqlparse
+
             # Strip leading and trailing ticks if present
             _output = re.sub(r'^\s*`|`\s*$', '', input_str).strip()
 
