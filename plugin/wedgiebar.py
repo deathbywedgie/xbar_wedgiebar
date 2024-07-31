@@ -1803,7 +1803,7 @@ class Actions:
         """ Decode URL Encoding (from clipboard) """
         _input_str = self.read_clipboard()
         try:
-            self.write_clipboard(urllib.parse.quote(_input_str))
+            self.write_clipboard(urllib.parse.quote(_input_str, safe=""))
         except:
             self.display_notification_error("URL encoding failed")
 
