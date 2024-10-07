@@ -299,9 +299,9 @@ class Reusable:
         return os.path.abspath(_temp_file)
 
     @staticmethod
-    def sort_dict_by_values(_input_str, reverse=False):
-        # return sorted(_input_str.items(), key=lambda x: x[1], reverse=reverse)
-        return {k: v for k, v in sorted(_input_str.items(), key=lambda x: x[1], reverse=reverse)}
+    def sort_dict_by_values(input_text, reverse=False):
+        # return sorted(input_text.items(), key=lambda x: x[1], reverse=reverse)
+        return {k: v for k, v in sorted(input_text.items(), key=lambda x: x[1], reverse=reverse)}
 
     @staticmethod
     def time_epoch_to_str(time_number, utc=False, time_format=None):
@@ -878,17 +878,17 @@ class Actions:
     def read_clipboard(trim_input=True, lower=False, upper=False, strip_carriage_returns=True) -> str:
         if lower and upper:
             raise ValueError("The \"lower\" and \"upper\" parameters in Actions.read_clipboard are mutually exclusive. Use one or the other, not both.")
-        _input_str = clipboard.paste()
+        input_text = clipboard.paste()
         if trim_input:
-            _input_str = _input_str.strip()
+            input_text = input_text.strip()
         if lower is True:
-            _input_str = _input_str.lower()
+            input_text = input_text.lower()
         if upper is True:
-            _input_str = _input_str.upper()
+            input_text = input_text.upper()
         if strip_carriage_returns:
             # strip return characters (Windows formatting)
-            _input_str = re.sub(r'\r', '', _input_str)
-        return _input_str
+            input_text = re.sub(r'\r', '', input_text)
+        return input_text
 
     def write_clipboard(self, text, skip_notification=False):
         clipboard.copy(text)
@@ -918,21 +918,21 @@ class Actions:
 
     def _clipboard_to_temp_file(self, file_ext, static_text=None):
         if static_text:
-            _input_str = static_text
+            input_text = static_text
         else:
-            _input_str = self.read_clipboard()
-        return Reusable.write_text_to_temp_file(_input_str, file_ext, file_ext + "_text")
+            input_text = self.read_clipboard()
+        return Reusable.write_text_to_temp_file(input_text, file_ext, file_ext + "_text")
 
     def _split_spaced_string(self, force_lower=False, sort=False, quote=False, update_clipboard=True):
-        _input_str = self.read_clipboard()
+        input_text = self.read_clipboard()
 
         # Remove commas and quotes in case the user clicked the wrong xbar option and wants to go right back to processing it
         # Remove pipes too so this can be used on postgresql headers as well
-        _input_str = re.sub('[,"|\']+', ' ', _input_str)
+        input_text = re.sub('[,"|\']+', ' ', input_text)
 
         if force_lower:
-            _input_str = _input_str.lower()
-        _columns = [i.strip() for i in _input_str.split() if i.strip()]
+            input_text = input_text.lower()
+        _columns = [i.strip() for i in input_text.split() if i.strip()]
         if sort:
             _columns = sorted(_columns)
         output_pattern = '"{}"' if quote else "{}"
@@ -1326,13 +1326,13 @@ class Actions:
         :return:
         """
         if manual_input:
-            _input_str = manual_input
+            input_text = manual_input
         else:
-            _input_str = self.read_clipboard()
-        if _input_str.endswith('%'):
-            _input_str = _input_str[:-1]
+            input_text = self.read_clipboard()
+        if input_text.endswith('%'):
+            input_text = input_text[:-1]
         try:
-            new = json.loads(_input_str, strict=False)
+            new = json.loads(input_text, strict=False)
             for _try in range(5):
                 if isinstance(new, (dict, list)):
                     break
@@ -1464,18 +1464,18 @@ class Actions:
         :param override_clipboard:
         :return:
         """
-        _input_str = override_clipboard if override_clipboard else self.read_clipboard()
-        url = url.replace(r'{}', _input_str)
+        input_text = override_clipboard if override_clipboard else self.read_clipboard()
+        url = url.replace(r'{}', input_text)
         if open_url is True:
             subprocess.call(["open", url])
         else:
             self.write_clipboard(url)
 
     def add_default_jira_project_when_needed(self):
-        _input_str = self.read_clipboard(upper=True)
-        if re.match(r"^\d+$", _input_str):
-            return f"{self.config.main.jira_default_prefix}-{_input_str}"
-        return _input_str
+        input_text = self.read_clipboard(upper=True)
+        if re.match(r"^\d+$", input_text):
+            return f"{self.config.main.jira_default_prefix}-{input_text}"
+        return input_text
 
     def make_link_jira_and_open(self):
         """
@@ -1667,8 +1667,8 @@ class Actions:
 
         :return:
         """
-        _input_str = self.read_clipboard()
-        _output = self.make_pretty_print_sql(_input_str, **kwargs)
+        input_text = self.read_clipboard()
+        _output = self.make_pretty_print_sql(input_text, **kwargs)
         self.write_clipboard(_output)
 
     def sql_pretty_print_sql(self):
@@ -1700,24 +1700,24 @@ class Actions:
         self.write_clipboard(f'SELECT DISTINCT {_columns_formatted}\nFROM ')
 
     def sql_start_from_tabs_join_left_columns_only(self):
-        _input_str = self._split_spaced_string(update_clipboard=False)
-        _columns = re.split(', *', _input_str)
+        input_text = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', input_text)
         self.write_clipboard("L.{}".format(", L.".join(_columns)))
 
     def sql_start_from_tabs_join_right_columns_only(self):
-        _input_str = self._split_spaced_string(update_clipboard=False)
-        _columns = re.split(', *', _input_str)
+        input_text = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', input_text)
         self.write_clipboard("R.{}".format(", R.".join(_columns)))
 
     def sql_start_from_tabs_join_left(self):
-        _input_str = self._split_spaced_string(update_clipboard=False)
-        _columns = re.split(', *', _input_str)
+        input_text = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', input_text)
         _columns_formatted = "L.{}".format(", L.".join(_columns))
         self.write_clipboard(f'SELECT {_columns_formatted}\nFROM xxxx L\nLEFT JOIN xxxx R\nON L.xxxx = R.xxxx')
 
     def sql_start_from_tabs_join_right(self):
-        _input_str = self._split_spaced_string(update_clipboard=False)
-        _columns = re.split(', *', _input_str)
+        input_text = self._split_spaced_string(update_clipboard=False)
+        _columns = re.split(', *', input_text)
         _columns_formatted = "R.{}".format(", R.".join(_columns))
         self.write_clipboard(f'SELECT {_columns_formatted}\nFROM xxxx L\nLEFT JOIN xxxx R\nON L.xxxx = R.xxxx')
 
@@ -1729,9 +1729,9 @@ class Actions:
     def _text_sort_lines(self, remove_duplicates: bool):
         """Sort Lines (reusable)"""
         # NOTE TO SELF: If I ever find that I need to support wrapped strings with linebreaks in them, redo this as csv
-        _input_str = self.read_clipboard(strip_carriage_returns=True)
+        input_text = self.read_clipboard(strip_carriage_returns=True)
 
-        all_values = [row.strip() for row in re.split(r'\n', _input_str) if row.strip()]
+        all_values = [row.strip() for row in re.split(r'\n', input_text) if row.strip()]
         if remove_duplicates:
             all_values = list(set(all_values))
 
@@ -1750,9 +1750,9 @@ class Actions:
 
     def _text_sort_words_and_phrases(self, remove_duplicates: bool):
         """Sort Words and Phrases"""
-        _input_str = self.read_clipboard(trim_input=True, strip_carriage_returns=True)
+        input_text = self.read_clipboard(trim_input=True, strip_carriage_returns=True)
         r = re.compile(r"([\"'`]+)(?P<quoted>(?s).*?)(?<!\\)\1|(?P<unquoted>\S+)")
-        matches = [m.groupdict() for m in r.finditer(_input_str)]
+        matches = [m.groupdict() for m in r.finditer(input_text)]
         all_values = [val for val in [tup.get(k) for tup in matches for k in ["quoted", "unquoted"]] if val]
         if remove_duplicates is True:
             all_values = list(set(all_values))
@@ -1780,7 +1780,7 @@ class Actions:
 
         :return:
         """
-        self.write_clipboard(self.read_clipboard(trim_input=False).lower())
+        self.write_clipboard(self.read_clipboard(trim_input=False, lower=True))
 
     def text_trim_string(self):
         """
@@ -1801,43 +1801,43 @@ class Actions:
 
     def encode_url_encoding(self):
         """ Decode URL Encoding (from clipboard) """
-        _input_str = self.read_clipboard()
+        input_text = self.read_clipboard()
         try:
-            self.write_clipboard(urllib.parse.quote(_input_str, safe=""))
+            self.write_clipboard(urllib.parse.quote(input_text, safe=""))
         except:
             self.display_notification_error("URL encoding failed")
 
     def decode_url_encoding(self):
         """ Decode URL Encoding (from clipboard) """
-        _input_str = self.read_clipboard()
+        input_text = self.read_clipboard()
         try:
-            self.write_clipboard(urllib.parse.unquote(_input_str))
+            self.write_clipboard(urllib.parse.unquote(input_text))
         except:
             self.display_notification_error("Failed to decode URL string")
 
     def action_encode_base_64(self):
         """Base64: Encode"""
-        _input_str = self.read_clipboard()
-        encoded_str = base64.b64encode(str.encode(_input_str, 'utf-8'))
+        input_text = self.read_clipboard()
+        encoded_str = base64.b64encode(str.encode(input_text, 'utf-8'))
         self.write_clipboard(encoded_str.decode())
 
     def action_decode_base_64(self):
         """Base64: Decode"""
-        _input_str = self.read_clipboard()
-        encoded_str = base64.b64decode(_input_str)
+        input_text = self.read_clipboard()
+        encoded_str = base64.b64decode(input_text)
         self.write_clipboard(encoded_str.decode())
 
     def remove_non_ascii_characters(self):
         """Strip non-ascii characters"""
-        _input_str = self.read_clipboard()
-        string_encode = _input_str.encode("ascii", "ignore")
+        input_text = self.read_clipboard()
+        string_encode = input_text.encode("ascii", "ignore")
         string_decode = string_encode.decode()
         self.write_clipboard(string_decode)
 
     def white_space_to_underscores(self):
         """White space to underscores"""
-        _input_str = self.read_clipboard()
-        self.write_clipboard(re.sub(r'\s+', '_', _input_str))
+        input_text = self.read_clipboard()
+        self.write_clipboard(re.sub(r'\s+', '_', input_text))
 
     def spaced_string_to_commas(self):
         self._split_spaced_string()
@@ -1868,14 +1868,14 @@ class Actions:
 
     def action_epoch_time_to_str(self, update_clipboard=False):
         """Show epoch time as local time"""
-        _input_str = self.read_clipboard().replace(',', '')
+        input_text = self.read_clipboard().replace(',', '')
         try:
-            _ = float(_input_str)
+            _ = float(input_text)
         except ValueError:
-            self.display_notification_error(f'"{_input_str}" is not a valid number')
+            self.display_notification_error(f'"{input_text}" is not a valid number')
             return
-        _output = Reusable.time_epoch_to_str(_input_str).strip()
-        self.display_notification(f'{_input_str} = {_output}')
+        _output = Reusable.time_epoch_to_str(input_text).strip()
+        self.display_notification(f'{input_text} = {_output}')
         if update_clipboard:
             self.write_clipboard(_output, skip_notification=True)
 
