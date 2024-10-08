@@ -527,6 +527,44 @@ class Config:
         self.menu_networking = ConfigMenuNetworking(kwargs)
 
 
+class TextEditor:
+
+    def __init__(self, input_text: str, trim_input=True, lower=False, upper=False, strip_carriage_returns=True):
+        if lower and upper:
+            raise ValueError(
+                "The \"lower\" and \"upper\" parameters in Actions.read_clipboard are mutually exclusive. Use one or the other, not both.")
+        self.text = input_text
+        if trim_input:
+            self.text = self.text.strip()
+        if lower is True:
+            self.text = self.text.lower()
+        if upper is True:
+            self.text = self.text.upper()
+        if strip_carriage_returns:
+            # strip return characters (Windows formatting)
+            self.text = re.sub(r'\r', '', self.text)
+
+    def mixed_case_to_snake_case(self) -> str:
+        # If the text is already in snake_case, return it as is.
+        if re.match(r"^\w+$", self.text) and self.text.islower():
+            return self.text
+
+        new_text = self.text
+
+        # Convert white space to underscore
+        new_text = re.sub(r'\s+', '_', new_text)
+
+        # Convert CamelCase to snake_case
+        new_text = re.sub('(?<!^)(?=[A-Z])', '_', new_text).lower()
+
+        # If there are leading or trailing underscores, drop them
+        new_text = re.sub("^_+|_+$", '', new_text)
+
+        # if there are multiple underscores in a row, reduce them to one
+        new_text = re.sub("__+", '_', new_text)
+        return new_text
+
+
 @dataclass
 class ActionObject:
     id: str
@@ -581,6 +619,7 @@ class Actions:
 
         self.make_action("Text to Uppercase", self.text_make_uppercase, keyboard_shortcut="CmdOrCtrl+OptionOrAlt+u")
         self.make_action("Text to Lowercase", self.text_make_lowercase, keyboard_shortcut="CmdOrCtrl+OptionOrAlt+l")
+        self.make_action("Text to Snake Case (lowercase with underscores)", self.text_mixed_case_to_snake_case, keyboard_shortcut="CmdOrCtrl+shift+l")
         self.make_action("Trim Text in Clipboard", self.text_trim_string)
         self.make_action("Remove Text Formatting", self.text_remove_formatting)
         self.make_action("URL Encoding: Encode (from clipboard)", self.encode_url_encoding,
@@ -1775,27 +1814,22 @@ class Actions:
         self.write_clipboard(self.read_clipboard(trim_input=False, upper=True))
 
     def text_make_lowercase(self):
-        """
-        Text to Lowercase
-
-        :return:
-        """
+        """ Text to Lowercase """
         self.write_clipboard(self.read_clipboard(trim_input=False, lower=True))
 
-    def text_trim_string(self):
-        """
-        Trim Text in Clipboard
+    def text_mixed_case_to_snake_case(self):
+        """ Text to Snake Case (lowercase with underscores) """
+        t = TextEditor(clipboard.paste())
+        self.write_clipboard(t.mixed_case_to_snake_case())
 
-        :return:
-        """
+    def text_trim_string(self):
+        """ Trim Text in Clipboard """
         self.write_clipboard(self.read_clipboard(trim_input=False).strip())
 
     def text_remove_formatting(self):
         """
         Remove Text Formatting
         (Merely copies text from clipboard back into clipboard, thus removing text formatting)
-
-        :return:
         """
         self.write_clipboard(self.read_clipboard(trim_input=False))
 
