@@ -913,6 +913,7 @@ class Actions:
         self.print_in_menu(menu_line)
         return action_obj
 
+    # ToDo Phase this out in places that can use the new TextEditor class
     @staticmethod
     def read_clipboard(trim_input=True, lower=False, upper=False, strip_carriage_returns=True) -> str:
         if lower and upper:
@@ -1153,7 +1154,12 @@ class Actions:
             log.debug(f"Loopback alias {loopback_ip} not found; creating")
             # Validate sudo session
             Reusable.do_prompt_for_sudo()
-            _ = Reusable.run_cli_command(f"sudo ifconfig {self.loopback_interface} alias ${loopback_ip}")
+            # cmd_string = f"sudo ifconfig {self.loopback_interface} alias ${loopback_ip}"
+            # ToDo Finish this
+            # ToDo if this works, it means zsh is interpreting differently than bash did
+            cmd_string = f"sudo ifconfig {self.loopback_interface} alias {loopback_ip}"
+            print(f"running: {cmd_string}")
+            _ = Reusable.run_cli_command(cmd_string)
 
     def do_verify_ssh_tunnel_available(self, loopback_ip, loopback_port):
         print(f"Checking for existing tunnels {loopback_ip}:{loopback_port}...")
